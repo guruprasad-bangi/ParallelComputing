@@ -41,7 +41,8 @@ int main (int argc, char* argv[]) {
   generateReduceData (arr, atoi(argv[1]));
   
   //write code here
-  long result=0;
+  //long result=0;
+  long sum =0;
   int n = atoi(argv[1]);
   int nbthreads = atoi(argv[2]);
   std::string scheduling = argv[3];
@@ -62,23 +63,21 @@ int main (int argc, char* argv[]) {
 
   #pragma omp parallel
     {
-      
-    #pragma omp single
-      {
-        #pragma omp task
-        for(int j=0; j<n ; j++)
-          
-          {
-            result += arr[j];
-          }
-      }
+      long result =0;
+    #pragma omp for schedule(runtime)        
+      for(int j=0; j<n ; j++)  
+        #pragma omp task        
+        {
+          result += arr[j];
+        }      
+    sum = result;
     }
   
   std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = end-start;
   std::cerr<<elapsed_seconds.count()<<std::endl;
 
-  std::cout << result << std::endl;
+  std::cout << sum << std::endl;
 
   delete[] arr;
 
