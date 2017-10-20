@@ -31,8 +31,8 @@ int main (int argc, char* argv[]) {
     }
   }
   
-  if (argc < 5) {
-    std::cerr<<"Usage: "<<argv[0]<<" <n> <nbthreads> <scheduling> <granularity>"<<std::endl;
+  if (argc < 3) {
+    std::cerr<<"Usage: "<<argv[0]<<" <n> <nbthreads>"<<std::endl;
     return -1;
   }
 
@@ -41,32 +41,20 @@ int main (int argc, char* argv[]) {
   generateReduceData (arr, atoi(argv[1]));
   
   //write code here
-  //long result=0;
   long sum =0;
   int n = atoi(argv[1]);
-  int nbthreads = atoi(argv[2]);
-  std::string scheduling = argv[3];
-  int granularity = atoi(argv[4]);
-  
+  int nbthreads = atoi(argv[2]);  
 
-   omp_set_num_threads(nbthreads);
-
-  if(scheduling == "static")
-        omp_set_schedule(omp_sched_static,granularity);
-      else if(scheduling == "dynamic")
-        omp_set_schedule(omp_sched_dynamic,granularity);
-      else if(scheduling == "guided")
-        omp_set_schedule(omp_sched_guided,granularity);
-      else std::cerr << "Invalid scheduling options entered" << std::endl;
+  omp_set_num_threads(nbthreads);  
 
   std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
-  #pragma omp parallel
+  #pragma omp parallel 
     {
       long result =0;
-    #pragma omp for schedule(runtime)        
+    #pragma omp single         
       for(int j=0; j<n ; j++)  
-        #pragma omp task        
+        #pragma omp task   
         {
           result += arr[j];
         }      
