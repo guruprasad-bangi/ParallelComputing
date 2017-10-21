@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-  void generateMergeSortData (int* arr, size_t n);
+  //void generateMergeSortData (int* arr, size_t n);
   void checkMergeSortResult (int* arr, size_t n);
 
   
@@ -20,8 +20,9 @@ extern "C" {
 }
 #endif
 
-void merge(int *a, unsigned long l, unsigned long m, unsigned long r);
-unsigned long min2(unsigned long a1, unsigned long a2);
+void merge(int *a[], int startIndex, int endIndex);
+void mergeSort(int* array, int start, int end);
+void generateMergeSortData (int* arr, size_t n);
 
 int main (int argc, char* argv[]) {
 
@@ -45,60 +46,58 @@ int main (int argc, char* argv[]) {
   int * arr = new int [atoi(argv[1])];
 
   generateMergeSortData (arr, atoi(argv[1]));
-  
+
   //write code here
 
-  unsigned long n = atoi(argv[1]);
+  int n = atoi(argv[1]);
   int nbthreads = atoi(argv[2]);  
 
-  omp_set_num_threads(nbthreads);
+  for(int a=0 ; a<n ; a++)
+    printf("%d  ",arr[a]);
+
+  printf("\n");
+
+  
 
   std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
-  for (unsigned long len=1; len<=n-1; len = 2*len)
-  {
-    #pragma omp parallel for schedule(static)
-    for (unsigned long ls=0; ls<n-1; ls += 2*len)
-    {
-      unsigned long mid = min2(ls+len-1, n-1);
-      unsigned long right = min2(ls+(2*len)-1, n-1);
-      merge(arr, ls, mid, right);
-    }
-  }
+  mergeSort(arr, 0, n-1);
      
   std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = end-start;
   std::cerr<<elapsed_seconds.count()<<std::endl;
 
-  checkMergeSortResult (arr, atoi(argv[1]));
+  //checkMergeSortResult (arr, atoi(argv[1]));
   
+  for(int a=0 ; a<n ; a++)
+    printf("%d  ",arr[a]);
+
   delete[] arr;
 
   return 0;
 }
 
-unsigned long min2(unsigned long a1, unsigned long a2)
+void merge(int *a, int l, int m, int r)
 {
-  return a1 < a2 ? a1 : a2;
-}
-
-void merge(int *a, unsigned long l, unsigned long m, unsigned long r)
-{
-  unsigned long n1 = m - l + 1, n2 = r - m;
+  int n1 = m - l + 1, n2 = r - m;
 
   // Creating left and right arrays
-  int L[n1], R[n2];
-  for (unsigned long i = 0; i < n1; i++)
+  //int L[n1], R[n2];
+
+  int * L = new int [n1];
+  int * R = new int [n2];
+
+  for (int i = 0; i < n1; i++)
   {
     L[i] = a[l + i]; // from l to l+n1-1
   }
-  for (unsigned long j = 0; j < n2; j++)
+  for (int j = 0; j < n2; j++)
   {
     R[j] = a[m + 1+ j]; // from m+1 to m+n2
   }
 
   
-  unsigned long i = 0, j = 0, k = l;
+  int i = 0, j = 0, k = l;
 
   // Merging 2 arrays of length n1 & n2
   while (i < n1 && j < n2)
@@ -127,7 +126,54 @@ void merge(int *a, unsigned long l, unsigned long m, unsigned long r)
       a[k++] = R[j++];
     }
   }
+
+  delete[] R;
+  delete[] L;
+  
   return;
 }
 
 
+void mergeSort(int* array, int start, int end) {
+    if(start < end) {
+
+        //omp_set_num_threads(nbthreads);
+        //printf("Thread %d is sorting %d through %d\n", omp_get_thread_num(), start, end);
+        int middle = (start + end) / 2;
+
+      /*  mergeSort(array, start, middle);
+
+        mergeSort(array, middle + 1, end);
+
+        merge(array, start,middle, end);*/
+        /* sort both halves in parallel */
+        #pragma omp parallel 
+        {
+            #pragma omp single
+            {
+                #pragma omp task
+                mergeSort(array, start, middle);
+
+                #pragma omp task
+                mergeSort(array, middle + 1, end);
+            
+        
+        #pragma omp taskwait
+        /* merge the two halves */
+        merge(array, start, middle, end);
+      }
+      }
+    }
+}
+
+void generateMergeSortData (int* arr, size_t n){
+  int* array = arr;
+  long arraySize = n;
+  srand(time(NULL));
+  //int[arraySize] array= {0};
+  for (int i=0 ; i<arraySize ; i++){
+    array[i] = arraySize-i;
+    //array[i] = rand() % arraySize;
+    
+  }
+}
