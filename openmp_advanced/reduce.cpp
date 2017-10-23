@@ -17,6 +17,9 @@ extern "C" {
 }
 #endif
 
+//void generateReduceData (int* arr, size_t n);
+long reduce_sum(int *a, size_t n);
+
 int main (int argc, char* argv[]) {
 
   //forces openmp to create the threads beforehand
@@ -49,25 +52,64 @@ int main (int argc, char* argv[]) {
 
   std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
-  #pragma omp parallel 
-    {
-      long result =0;
-    #pragma omp single         
-      for(int j=0; j<n ; j++)  
-        #pragma omp task   
-        {
-          result += arr[j];
-        }      
-    sum = result;
-    }
+  long result =0;
+
+  // #pragma omp parallel 
+  //   {
+      
+  //   // #pragma omp single         
+  //     for(int j=0; j<n ; j++)  
+  //       #pragma omp task   
+  //       {
+  //         result += arr[j];
+  //       }      
+  //   sum = result;
+  //   }
+
+  #pragma omp parallel
+  {
+    #pragma single
+    #pragma omp task
+      result = reduce_sum(arr, n);
+  }
   
   std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = end-start;
   std::cerr<<elapsed_seconds.count()<<std::endl;
 
-  std::cout << sum << std::endl;
+  std::cout << result << std::endl;
 
   delete[] arr;
 
   return 0;
 }
+
+// void generateReduceData (int* arr, size_t n){
+//   int* array = arr;
+//   long arraySize = n;
+//   srand(time(NULL));
+//   for (int i=0 ; i<arraySize ; i++){
+//     array[i] = 1;
+//   }
+// }
+
+long reduce_sum(int *a, size_t n){
+
+  if(n == 1)
+    return a[0];
+
+  long x,y;
+  size_t half = n/2;
+
+  #pragma omp task shared(x)
+  x = reduce_sum(a,half);
+
+  #pragma omp task shared(y)
+  y= reduce_sum(a + half, n - half);
+
+  #pragma omp taskwait
+  x+=y;
+
+  return x;
+}
+
